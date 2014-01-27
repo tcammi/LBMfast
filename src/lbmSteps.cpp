@@ -7,6 +7,8 @@
 
 #include "lbmSteps.h"
 #include "helper.h"
+#include <iostream>
+using namespace std;
 
 void computeEQ(double*** &f, double** v, double** u, double** rho, int c[9][2],
 		double w[9], double cs, int Ny, int Nx) {
@@ -35,7 +37,7 @@ void computeMacro(double*** f, double** &v, double** &u, double** &rho,
 
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
-			if (state[i][j] == 1) {
+			if (state[i][j] >= 1 && state[i][j] <= 4) {
 				rho[i][j] = 0.0;
 				v[i][j] = 0.0;
 				u[i][j] = 0.0;
@@ -56,7 +58,7 @@ void collision(double*** &f, double*** fEQ, int** state, double omega, int Ny,
 	for (int k = 0; k < 9; k++) {
 		for (int i = 0; i < Ny + 1; i++) {
 			for (int j = 0; j < Nx + 1; j++) {
-				if (state[i][j] == 1) {
+				if (state[i][j] >= 1 && state[i][j] <= 4) {
 					f[k][i][j] += omega * (fEQ[k][i][j] - f[k][i][j]);
 				}
 			}
@@ -64,28 +66,40 @@ void collision(double*** &f, double*** fEQ, int** state, double omega, int Ny,
 	}
 }
 
-void source(double*** &f, double omega, double cs, int Ny, int Nx) {
+void source(double*** &f, int** state, double omega, double cs, int Ny,
+		int Nx) {
 
 	double rho0 = 1.;
 	double nu = rho0 * (1. / omega - 0.5) * cs * cs;
-	double um = 50;
+	double um = 10;
 	double H = Ny + 1.;
 
 	double G = 8. * nu / H / H * um / 6.;
 
+//	for (int i = 0; i < Ny + 1; i++) {
+//		for (int j = 0; j < Nx + 1; j++) {
+//			if (state[i][j] >= 1 && state[i][j] <= 4) {
+//
+//				f[1][i][j] += G;
+//				f[5][i][j] += G;
+//				f[8][i][j] += G;
+//
+//				f[3][i][j] -= G;
+//				f[6][i][j] -= G;
+//				f[7][i][j] -= G;
+//			}
+//		}
+//	}
+
+// let us only simulate constant inflow
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
+			if (state[i][j] == 3) {
+				f[1][i][j] = G;
+				f[5][i][j] = G;
+				f[8][i][j] = G;
 
-			// alpha = 45°
-
-			f[1][i][j] += G;
-			f[5][i][j] += G;
-			f[8][i][j] += G;
-
-			f[3][i][j] -= G;
-			f[6][i][j] -= G;
-			f[7][i][j] -= G;
-
+			}
 		}
 	}
 
@@ -136,8 +150,15 @@ void streaming(double*** &f, double*** fDummy, solid* boundary, int Nb,
 	int ii, jj;
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
-			if (state[i][j] == 1) { // liquid node
+			if (state[i][j] == 1) { // liquid and inside
+				// no need to take care of periodic wall
+				for (int k = 0; k < 9; k++) {
+					ii = i + c[k][0];
+					jj = j + c[k][1];
+					fDummy[k][ii][jj] = f[k][i][j];
+				}
 
+			} else if (state[i][j] == 2) { // liquid and periodic
 				for (int k = 0; k < 9; k++) {
 
 					ii = i + c[k][0];
@@ -153,6 +174,29 @@ void streaming(double*** &f, double*** fDummy, solid* boundary, int Nb,
 
 					fDummy[k][ii][jj] = f[k][i][j];
 				}
+
+			} else if (state[i][j] == 3) { // inflow
+				// for inflow, stream inside
+				// except: in source these elements are constant
+				for (int k = 0; k < 9; k++) {
+					if (k == 1 || k == 5 || k == 8) {
+						// attention : inflow can still be periodic like left upper corner
+						ii = i + c[k][0];
+						if (ii < 0)
+							ii = Ny;
+						if (ii > Ny)
+							ii = 0;
+						jj = j + c[k][1];
+						if (jj < 0)
+							jj = Nx;
+						if (jj > Nx)
+							jj = 0;
+						fDummy[k][ii][jj] = f[k][i][j];
+					}
+				}
+			} else if (state[i][j] == 4) { // outflow
+
+				// for outflow, just do nothing with these cells
 			}
 		}
 	}

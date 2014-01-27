@@ -1,7 +1,7 @@
 function postprocessing()
 close all
 
-pre = 'lamboV2';
+pre = 'circleNewVersion';
 
 grid=load (strcat(pre,'grid.txt'));
 v=load (strcat(pre,'v.txt'));
@@ -24,7 +24,7 @@ imagesc(grid)
 size(grid)
 
 hold off
-imagesc(w)
+%imagesc(w)
 hold on
 
 N = sum(sum(grid==0));
@@ -47,8 +47,9 @@ end
 plot(jj,ii,'.k');
 
  hold on
-%quiver(u,v);
- streamline(u,v,startx,starty,[0.2]);
+ figure
+quiver(u,v);
+% streamline(u,v,startx,starty,[0.2]);
 % 
  
 end

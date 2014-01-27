@@ -23,8 +23,8 @@ int main() {
 	timeval a;
 	gettimeofday(&a, 0);
 	timeval b;
-	int Nx = 400; // dim may be overwritten when reading from file
-	int Ny = 400;
+	int Nx = 50; // dim may be overwritten when reading from file
+	int Ny = 50;
 	int Niter = 0;
 	double cs = 1. / sqrt(3.);
 	double omega = 1.25;
@@ -40,15 +40,16 @@ int main() {
 	double *** fEQ;
 	double *** fDummy;
 	double ** v, **u, **rho;
-
+	int NiterMax = 1000;
 	int** state;
 	solid* boundary;
 
-	bool fromFile = true;
+	bool fromFile = false;
+
 	char infolder[] = "input/";
 	char inid[] = "lambo2.txt";
 	char outfolder[] = "output/";
-	char outid[] = "lamboV2";
+	char outid[] = "circleNewVersion";
 
 	if (fromFile) {
 		readGridFromFile(state, Ny, Nx, infolder, inid);
@@ -77,14 +78,15 @@ int main() {
 		}
 	}
 	cout << "N fluid =  " << Fluid << "\tN solid = " << Wall<< "\tN surrounded = "<< Surr << endl;
-	cout << " (Nx+1)*(Ny+1) = " << (Nx+1)*(Ny+1) << " Sum of line above = " << Fluid+Wall+Surr << endl;
-	while (true && Niter <= 500) {
+	cout << "(Nx+1)*(Ny+1) = " << (Nx+1)*(Ny+1) << " Sum of line above = " << Fluid+Wall+Surr << endl;
+	cout << "NiterMax = " << NiterMax << endl;
+	while (true && Niter <= NiterMax) {
 		if (Niter % 50 == 0)
 			cout << "Number of iterations = " << Niter << endl;
 		computeMacro(f, v, u, rho, state, c, Ny, Nx);
 		computeEQ(fEQ, v, u, rho, c, w, cs, Ny, Nx);
 		collision(f, fEQ, state, omega, Ny, Nx);
-		source(f, omega, cs, Ny, Nx);
+		source(f,state, omega, cs, Ny, Nx);
 		applyBC(f, fDummy, state, boundary, mirror, Nb, Ny, Nx);
 		streaming(f, fDummy, boundary, Nb, state, c, Ny, Nx);
 		Niter++;

@@ -19,33 +19,52 @@ using namespace std;
 void initGrid(int** &state, int Ny, int Nx) {
 
 
-
-
 	state = new int*[Ny + 1];
 	for (int i = 0; i < Ny + 1; i++)
 		state[i] = new int[Nx + 1];
 
+
+	// initialize everything as flow
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
-			state[i][j] = 1; // initialize everything as flow
+			state[i][j] = 1;
 		}
 	}
 
-	for (int j = 0; j < Nx + 1; j++) { // lower & uppwer wall
-		state[0][j] = 0;
-		state[Ny][j] = 0;
+	// periodic  have id  2
+	for (int j=0;j<Nx+1;j++){
+		state[0][j] = -1;
+		state[Ny][j] = -1;
 	}
+
+	// inflow has id 3
+	// outflow has id 4
+	for (int i=0;i<Ny+1;i++){
+		state[i][0] = 3;
+		state[i][Nx] = 4;
+	}
+
+
+
+
+
+
+
+//	for (int j = 0; j < Nx + 1; j++) { // lower & uppwer wall
+//		state[0][j] = 0;
+//		state[Ny][j] = 0;
+//	}
  //CIRCLE
 	int midx, midy;
 	midx = Nx / 2;
 	midy = Ny / 2;
 
-	int R = 100;
+	int R = 10;
 
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
 			if (((i - midy) * (i - midy) + (j - midx) * (j - midx)) < R * R) {
-				state[i][j] = 0;
+				state[i][j] = -1;
 			}
 		}
 	}
@@ -83,6 +102,7 @@ void readGridFromFile(int **& state, int &Ny, int &Nx, char folder[50],char id[5
 
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
+
 			state[i][j] = numbers[counter];
 			counter++;
 		}
@@ -104,7 +124,7 @@ void gridGeneration(solid* & boundary, int &Nb, int** &state, int Ny, int Nx,
 	Nb = 0;
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
-			if (state[i][j] == 0)
+			if (state[i][j] >=1 && state[i][j]<=4)// id i..4 is liquid
 				Nb++;
 		}
 	}
@@ -114,7 +134,7 @@ void gridGeneration(solid* & boundary, int &Nb, int** &state, int Ny, int Nx,
 	int counter = 0;
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
-			if (state[i][j] == 0) {
+			if (state[i][j] == -1 || state[i][j] == -2) { // solid or solid  & inside
 				solid s;
 				s.i = i;
 				s.j = j;
@@ -138,7 +158,7 @@ void gridGeneration(solid* & boundary, int &Nb, int** &state, int Ny, int Nx,
 					if (jj > Nx)
 						jj = 0;
 
-					if (state[ii][jj] == 1) {
+					if (state[ii][jj] >=1 && state[ii][jj]<=4) { // id i..4 is liquid
 						Nl++; // liquid neighbor
 						klink.push(k);
 						ilink.push(ii);
@@ -164,11 +184,10 @@ void gridGeneration(solid* & boundary, int &Nb, int** &state, int Ny, int Nx,
 				}
 
 				// is the node surrounded by solid nodes?
-
 				if (Nl == 0) {
 
 					s.surrounded = true;
-					state[s.i][s.j] = -1;// id for surrounded node
+					state[s.i][s.j] = -2;// id for surrounded node
 
 				} else
 					s.surrounded = false;
