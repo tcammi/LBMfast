@@ -10,8 +10,8 @@
 #include <iostream>
 using namespace std;
 
-void computeEQ(double*** &f, double** v, double** u, double** rho, int c[9][2],
-		double w[9], double cs, int Ny, int Nx) {
+void computeEQ(double*** &f, int** state, double** v, double** u, double** rho,
+		int c[9][2], double w[9], double cs, int Ny, int Nx) {
 
 	double csSq = cs * cs;
 	double cDotu, uSq;
@@ -19,11 +19,13 @@ void computeEQ(double*** &f, double** v, double** u, double** rho, int c[9][2],
 	for (int k = 0; k < 9; k++) {
 		for (int i = 0; i < Ny + 1; i++) {
 			for (int j = 0; j < Nx + 1; j++) {
-				uSq = (v[i][j] * v[i][j] + u[i][j] * u[i][j]) / (2. * csSq);
-				cDotu = (c[k][0] * v[i][j] + c[k][1] * u[i][j]) / csSq;
+				if (state[i][j] >= 1 && state[i][j] <= 4) {
+					uSq = (v[i][j] * v[i][j] + u[i][j] * u[i][j]) / (2. * csSq);
+					cDotu = (c[k][0] * v[i][j] + c[k][1] * u[i][j]) / csSq;
 
-				f[k][i][j] = rho[i][j] * w[k]
-						* (1 + cDotu - uSq + cDotu * cDotu / 2.);
+					f[k][i][j] = rho[i][j] * w[k]
+							* (1 + cDotu - uSq + cDotu * cDotu / 2.);
+				}
 
 			}
 		}
@@ -48,6 +50,10 @@ void computeMacro(double*** f, double** &v, double** &u, double** &rho,
 				}
 				v[i][j] /= rho[i][j];
 				u[i][j] /= rho[i][j];
+			} else { // solid
+				rho[i][j] = 0.0;
+				v[i][j] = 0.0;
+				u[i][j] = 0.0;
 			}
 		}
 	}
@@ -59,15 +65,15 @@ void collision(double*** &f, double*** fEQ, int** state, double omega, int Ny,
 		for (int i = 0; i < Ny + 1; i++) {
 			for (int j = 0; j < Nx + 1; j++) {
 				if (state[i][j] >= 1 && state[i][j] <= 4) {
-					f[k][i][j] += omega * (fEQ[k][i][j] - f[k][i][j]);
+				f[k][i][j] += omega * (fEQ[k][i][j] - f[k][i][j]);
 				}
 			}
 		}
 	}
 }
 
-void source(double*** &f, int** state, double omega, double cs, int Ny,
-		int Nx) {
+void source(double*** &f, int** state, int c[9][2], double omega, double cs,
+		int Ny, int Nx) {
 
 	double rho0 = 1.;
 	double nu = rho0 * (1. / omega - 0.5) * cs * cs;
@@ -76,32 +82,50 @@ void source(double*** &f, int** state, double omega, double cs, int Ny,
 
 	double G = 8. * nu / H / H * um / 6.;
 
+	for (int i = 0; i < Ny + 1; i++) {
+		for (int j = 0; j < Nx + 1; j++) {
+			if (state[i][j] >= 1 && state[i][j] <= 4) {
+
+				f[1][i][j] += G;
+				f[5][i][j] += G;
+				f[8][i][j] += G;
+
+				f[3][i][j] -= G;
+				f[6][i][j] -= G;
+				f[7][i][j] -= G;
+			}
+		}
+	}
+
+	//let us only simulate constant inflow
+//	int ii,jj;
 //	for (int i = 0; i < Ny + 1; i++) {
 //		for (int j = 0; j < Nx + 1; j++) {
-//			if (state[i][j] >= 1 && state[i][j] <= 4) {
-//
+//			if (state[i][j] == 3) {
 //				f[1][i][j] += G;
 //				f[5][i][j] += G;
 //				f[8][i][j] += G;
 //
-//				f[3][i][j] -= G;
-//				f[6][i][j] -= G;
-//				f[7][i][j] -= G;
+//			}
+//			if (state[i][j] == 4){
+//
+//				for (int k = 0; k < 9; k++) {
+//
+//						// attention : inflow can still be periodic like left upper corner
+//						ii = i + c[k][0];
+//						jj = j + c[k][1];
+//
+//						if (ii < 0 || ii > Ny || jj < 0 || jj > Nx) {
+//							// do nothing because this is pointing outside
+//						} else {
+//							f[k][i][j]  += -G;
+//						}
+//					}
+//
+//
 //			}
 //		}
 //	}
-
-// let us only simulate constant inflow
-	for (int i = 0; i < Ny + 1; i++) {
-		for (int j = 0; j < Nx + 1; j++) {
-			if (state[i][j] == 3) {
-				f[1][i][j] = G;
-				f[5][i][j] = G;
-				f[8][i][j] = G;
-
-			}
-		}
-	}
 
 }
 
@@ -146,7 +170,7 @@ void applyBC(double*** &f, double*** fDummy, int** state, solid* boundary,
 
 void streaming(double*** &f, double*** fDummy, solid* boundary, int Nb,
 		int **state, int c[9][2], int Ny, int Nx) {
-
+	copyToFrom(fDummy, f, Ny, Nx);
 	int ii, jj;
 	for (int i = 0; i < Ny + 1; i++) {
 		for (int j = 0; j < Nx + 1; j++) {
@@ -175,28 +199,22 @@ void streaming(double*** &f, double*** fDummy, solid* boundary, int Nb,
 					fDummy[k][ii][jj] = f[k][i][j];
 				}
 
-			} else if (state[i][j] == 3) { // inflow
-				// for inflow, stream inside
-				// except: in source these elements are constant
+			} else if (state[i][j] == 3 || state[i][j] == 4) {
+				// inflow, outflow
+				//  stream inside
 				for (int k = 0; k < 9; k++) {
-					if (k == 1 || k == 5 || k == 8) {
-						// attention : inflow can still be periodic like left upper corner
-						ii = i + c[k][0];
-						if (ii < 0)
-							ii = Ny;
-						if (ii > Ny)
-							ii = 0;
-						jj = j + c[k][1];
-						if (jj < 0)
-							jj = Nx;
-						if (jj > Nx)
-							jj = 0;
+
+					// attention : inflow can still be periodic like left upper corner
+					ii = i + c[k][0];
+					jj = j + c[k][1];
+
+					if (ii < 0 || ii > Ny || jj < 0 || jj > Nx) {
+						// do nothing because this is pointing outside
+					} else {
 						fDummy[k][ii][jj] = f[k][i][j];
 					}
 				}
-			} else if (state[i][j] == 4) { // outflow
 
-				// for outflow, just do nothing with these cells
 			}
 		}
 	}

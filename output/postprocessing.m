@@ -47,7 +47,7 @@ end
 plot(jj,ii,'.k');
 
  hold on
- figure
+
 quiver(u,v);
 % streamline(u,v,startx,starty,[0.2]);
 % 

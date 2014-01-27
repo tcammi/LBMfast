@@ -23,8 +23,9 @@ int main() {
 	timeval a;
 	gettimeofday(&a, 0);
 	timeval b;
-	int Nx = 50; // dim may be overwritten when reading from file
+	int Nx = 5; // dim may be overwritten when reading from file
 	int Ny = 50;
+	int NiterMax = 1001;
 	int Niter = 0;
 	double cs = 1. / sqrt(3.);
 	double omega = 1.25;
@@ -40,7 +41,7 @@ int main() {
 	double *** fEQ;
 	double *** fDummy;
 	double ** v, **u, **rho;
-	int NiterMax = 1000;
+
 	int** state;
 	solid* boundary;
 
@@ -61,7 +62,7 @@ int main() {
 	initFlow(v, u, rho, Ny, Nx);
 
 	gridGeneration(boundary, Nb, state, Ny, Nx, c);
-	computeEQ(fEQ, v, u, rho, c, w, cs, Ny, Nx);
+	computeEQ(fEQ,state, v, u, rho, c, w, cs, Ny, Nx);
 	copyToFrom(f, fEQ, Ny, Nx);
 
 	cout << "Ny = " << Ny << " Nx = " << Nx <<  endl;
@@ -70,9 +71,9 @@ int main() {
 	int Surr = 0;
 	for (int i=0;i<Ny+1;i++){
 		for (int j=0;j<Nx+1;j++){
-			if (state[i][j]==1) Fluid++;
-			if (state[i][j]==0) Wall++;
-			if (state[i][j]==-1) Surr++;
+			if (state[i][j] >=1 && state[i][j] <= 4) Fluid++;
+			if (state[i][j]==-1) Wall++;
+			if (state[i][j]==-2) Surr++;
 
 
 		}
@@ -80,20 +81,32 @@ int main() {
 	cout << "N fluid =  " << Fluid << "\tN solid = " << Wall<< "\tN surrounded = "<< Surr << endl;
 	cout << "(Nx+1)*(Ny+1) = " << (Nx+1)*(Ny+1) << " Sum of line above = " << Fluid+Wall+Surr << endl;
 	cout << "NiterMax = " << NiterMax << endl;
+	cout << "\nStarting simulation: \n\n";
+
+	//for ( int k=0;k<9;k++) printMatrix(f,k,Ny,Nx);
 	while (true && Niter <= NiterMax) {
-		if (Niter % 50 == 0)
-			cout << "Number of iterations = " << Niter << endl;
+		if (Niter % 50 == 0){
+			cout << "Number of iterations = " << Niter <<"\t";
+			cout << "|";
+			for (int i=0;i<20.*Niter/NiterMax;i++) cout <<"=";
+			for (int i=20.*Niter/NiterMax;i<20;i++) cout << " ";
+			cout << "|"<<100.*Niter/NiterMax<<"%\t"<<endl;
+
+		}
+
 		computeMacro(f, v, u, rho, state, c, Ny, Nx);
-		computeEQ(fEQ, v, u, rho, c, w, cs, Ny, Nx);
+		computeEQ(fEQ,state, v, u, rho, c, w, cs, Ny, Nx);
 		collision(f, fEQ, state, omega, Ny, Nx);
-		source(f,state, omega, cs, Ny, Nx);
+		source(f,state,c, omega, cs, Ny, Nx);
 		applyBC(f, fDummy, state, boundary, mirror, Nb, Ny, Nx);
 		streaming(f, fDummy, boundary, Nb, state, c, Ny, Nx);
 		Niter++;
+		//for ( int k=0;k<9;k++) printMatrix(f,k,Ny,Nx);
+		//printMatrix(u,Ny,Nx);
 
 	}
 	gettimeofday(&b, 0);
-	cout << "Elapsed time = " << (b.tv_sec - a.tv_sec) << " seconds." << endl;
+	cout << "\nElapsed time = " << (b.tv_sec - a.tv_sec) << " seconds." << endl;
 
 	writeOutput(v, u, rho, state, Ny, Nx, outfolder, outid);
 	cout << "Finished!" << endl;

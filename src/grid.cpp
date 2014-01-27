@@ -40,8 +40,8 @@ void initGrid(int** &state, int Ny, int Nx) {
 	// inflow has id 3
 	// outflow has id 4
 	for (int i=0;i<Ny+1;i++){
-		state[i][0] = 3;
-		state[i][Nx] = 4;
+		state[i][0] = -1;
+		state[i][Nx] = -1;
 	}
 
 
