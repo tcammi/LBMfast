@@ -48,7 +48,7 @@ int main() {
 	char infolder[] = "input/";
 	char inid[] = "lambo2.txt";
 	char outfolder[] = "output/";
-	char outid[] = "lamboV2";
+	char outid[] = "test";
 
 	if (fromFile) {
 		readGridFromFile(state, Ny, Nx, infolder, inid);
