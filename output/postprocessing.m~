@@ -1,7 +1,7 @@
 function postprocessing()
 close all
 
-pre = 'lamboV2';
+pre = 'maze';
 
 grid=load (strcat(pre,'grid.txt'));
 v=load (strcat(pre,'v.txt'));
@@ -21,6 +21,7 @@ startx = [ones(1,Nlines),linspace(1,Nx+1,Nlines)];
 starty = [linspace(1,Ny,Nlines)';(Ny)*ones(Nlines,1)];
 
 imagesc(grid)
+size(grid)
 
 hold off
 imagesc(w)
@@ -46,8 +47,8 @@ end
 plot(jj,ii,'.k');
 
  hold on
-%quiver(u,v);
+quiver(u,v);
  streamline(u,v,startx,starty,[0.2]);
-% 
+
  
 end

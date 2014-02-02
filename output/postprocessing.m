@@ -1,7 +1,7 @@
 function postprocessing()
 close all
 
-pre = 'lamboV2';
+pre = 'maze';
 
 grid=load (strcat(pre,'grid.txt'));
 v=load (strcat(pre,'v.txt'));
@@ -15,10 +15,10 @@ w = dxv(1:end,1:end-1) - dyu(1:end-1,1:end) ;
 Ny = NyPlus1-1;
 Nx = NxPlus1-1;
 
-Nlines = 100;
+Nlines = 1000;
 
 startx = [ones(1,Nlines),linspace(1,Nx+1,Nlines)];
-starty = [linspace(1,Ny,Nlines)';(Ny)*ones(Nlines,1)];
+starty = [linspace(100,150,Nlines)';(Ny)*ones(Nlines,1)];
 
 imagesc(grid)
 size(grid)
@@ -48,7 +48,8 @@ plot(jj,ii,'.k');
 
  hold on
 %quiver(u,v);
- streamline(u,v,startx,starty,[0.2]);
-% 
+ streamline(u,v,startx,starty,[2,1e7]);
+
+
  
 end

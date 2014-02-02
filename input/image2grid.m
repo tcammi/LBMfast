@@ -1,12 +1,14 @@
 function image2grid
 
+close all
 
-a = imread('lambo.jpg');
-g = im2bw(a,0.9);
-g = [ones(571,300),g,ones(571,300)];
-g(end-180:end,:) = 0;
-imshow(g)
+a = imread('maze1.png');
+g = not(a);
 size(g)
+g = [ones(543,300),g,ones(543,300)];
+g(1:10,:) = 0;
+g(end-10:end,:) = 0;
+imagesc(g);
 % a = imread('kaeferMod.jpg');
 % B = im2bw(a,0.9);
 % % remove parts
@@ -34,6 +36,6 @@ for i=1:Ny+1
 end
 
 LinearOutput = [Ny,Nx, LinearOutput];
-dlmwrite('lambo2.txt',LinearOutput,'delimiter',' ');
+dlmwrite('maze.txt',LinearOutput,'delimiter',' ');
 
 end

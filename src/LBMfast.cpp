@@ -46,9 +46,9 @@ int main() {
 
 	bool fromFile = true;
 	char infolder[] = "input/";
-	char inid[] = "lambo2.txt";
+	char inid[] = "maze.txt";
 	char outfolder[] = "output/";
-	char outid[] = "test";
+	char outid[] = "maze2";
 
 	if (fromFile) {
 		readGridFromFile(state, Ny, Nx, infolder, inid);
@@ -78,7 +78,7 @@ int main() {
 	}
 	cout << "N fluid =  " << Fluid << "\tN solid = " << Wall<< "\tN surrounded = "<< Surr << endl;
 	cout << " (Nx+1)*(Ny+1) = " << (Nx+1)*(Ny+1) << " Sum of line above = " << Fluid+Wall+Surr << endl;
-	while (true && Niter <= 500) {
+	while (true && Niter <= 5000) {
 		if (Niter % 50 == 0)
 			cout << "Number of iterations = " << Niter << endl;
 		computeMacro(f, v, u, rho, state, c, Ny, Nx);
